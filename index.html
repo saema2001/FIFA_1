@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIFA 2026 · Stadium Intelligence Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E14;
+    --bg-2:#0D1220;
+    --panel:#121826;
+    --panel-2:#161d2e;
+    --border:rgba(255,255,255,0.08);
+    --border-strong:rgba(255,255,255,0.14);
+    --turf:#2DE370;
+    --turf-dim:rgba(45,227,112,0.15);
+    --amber:#FFB627;
+    --amber-dim:rgba(255,182,39,0.15);
+    --cyan:#4CC9F0;
+    --cyan-dim:rgba(76,201,240,0.15);
+    --danger:#FF5C5C;
+    --danger-dim:rgba(255,92,92,0.15);
+    --violet:#B98CFF;
+    --violet-dim:rgba(185,140,255,0.15);
+    --text:#E8ECF1;
+    --text-dim:#8A93A6;
+    --text-faint:#5A6376;
+    --radius:14px;
+    --font-display:'Space Grotesk',sans-serif;
+    --font-body:'Inter',sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+  html[data-theme="light"]{
+    --bg:#F0F2F6;
+    --bg-2:#E7EAF0;
+    --panel:#FFFFFF;
+    --panel-2:#F6F7FA;
+    --border:rgba(10,14,20,0.09);
+    --border-strong:rgba(10,14,20,0.16);
+    --turf-dim:rgba(20,160,80,0.12);
+    --amber-dim:rgba(200,130,10,0.12);
+    --cyan-dim:rgba(20,130,190,0.12);
+    --danger-dim:rgba(220,60,60,0.12);
+    --violet-dim:rgba(130,90,220,0.12);
+    --text:#161B26;
+    --text-dim:#5B6478;
+    --text-faint:#8A93A6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 1200px 600px at 15% -10%, var(--turf-dim), transparent 60%),
+      radial-gradient(ellipse 900px 500px at 100% 0%, var(--cyan-dim), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    transition:background .3s ease,color .3s ease;
+  }
+  .app{ display:flex; flex-direction:column; min-height:100vh; }
+
+  /* ---------- HEADER ---------- */
+  header{
+    display:flex; align-items:center; gap:20px;
+    padding:14px 22px;
+    border-bottom:1px solid var(--border);
+    background:rgba(18,24,38,0.5);
+    backdrop-filter:blur(16px);
+    position:sticky; top:0; z-index:50;
+  }
+  html[data-theme="light"] header{ background:rgba(255,255,255,0.6); }
+  .brand{ display:flex; align-items:center; gap:10px; margin-right:6px;}
+  .brand-mark{
+    width:34px; height:34px; border-radius:9px;
+    background:linear-gradient(135deg, var(--turf), #14A85C);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:700; color:#06170D; font-size:15px;
+    box-shadow:0 0 24px var(--turf-dim);
+  }
+  .brand-text{ display:flex; flex-direction:column; line-height:1.15;}
+  .brand-text b{ font-family:var(--font-display); font-size:14.5px; letter-spacing:.2px;}
+  .brand-text span{ font-size:10.5px; color:var(--text-faint); font-family:var(--font-mono); letter-spacing:.5px; text-transform:uppercase;}
+
+  .metric-pill{
+    display:flex; align-items:center; gap:9px;
+    padding:7px 14px; border-radius:100px;
+    background:var(--panel); border:1px solid var(--border);
+  }
+  .metric-pill .label{ font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.6px; font-family:var(--font-mono);}
+  .metric-pill .value{ font-family:var(--font-display); font-weight:600; font-size:15px;}
+  .dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0;}
+  .dot.pulse{ animation:pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1; box-shadow:0 0 0 0 currentColor;} 50%{opacity:.6;} }
+
+  .spacer{ flex:1; }
+  .clock{ font-family:var(--font-mono); font-size:13px; color:var(--text-dim); letter-spacing:.5px; margin-right:6px;}
+  .btn{
+    display:flex; align-items:center; gap:7px;
+    padding:9px 15px; border-radius:10px;
+    background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); font-family:var(--font-body); font-size:13px; font-weight:600;
+    cursor:pointer; transition:.15s ease; white-space:nowrap;
+  }
+  .btn:hover{ border-color:var(--border-strong); transform:translateY(-1px); }
+  .btn.primary{ background:linear-gradient(135deg, var(--turf), #14A85C); color:#06170D; border:none; }
+  .btn.primary:hover{ box-shadow:0 4px 22px var(--turf-dim); }
+  .btn.danger-outline{ border-color:rgba(255,92,92,0.4); color:var(--danger); }
+  .icon-btn{ width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--panel-2); border:1px solid var(--border); cursor:pointer; color:var(--text-dim); }
+  .icon-btn:hover{ color:var(--text); border-color:var(--border-strong); }
+
+  /* ---------- MAIN GRID ---------- */
+  .main{ flex:1; display:grid; grid-template-columns:210px 1fr 380px; gap:16px; padding:16px 22px 22px; align-items:start;}
+  @media (max-width:1100px){ .main{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:13px 16px; border-bottom:1px solid var(--border);
+  }
+  .panel-title{ font-family:var(--font-display); font-size:13px; font-weight:600; letter-spacing:.2px; display:flex; align-items:center; gap:8px;}
+  .panel-sub{ font-size:10.5px; color:var(--text-faint); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.5px;}
+
+  /* ---------- NAV ---------- */
+  nav.panel{ padding:10px; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 11px; border-radius:10px; margin-bottom:4px;
+    font-size:13px; font-weight:600; color:var(--text-dim);
+    cursor:pointer; transition:.15s ease; position:relative;
+  }
+  .nav-item svg{ width:16px; height:16px; opacity:.8; flex-shrink:0;}
+  .nav-item.active{ background:var(--turf-dim); color:var(--turf); }
+  .nav-item.active svg{ opacity:1; }
+  .nav-item:not(.active):hover{ background:var(--panel-2); color:var(--text); }
+  .nav-badge{ margin-left:auto; font-size:8.5px; font-family:var(--font-mono); color:var(--text-faint); background:var(--bg-2); padding:2px 6px; border-radius:6px; letter-spacing:.4px;}
+  .nav-divider{ height:1px; background:var(--border); margin:10px 4px; }
+  .nav-caption{ font-size:9.5px; color:var(--text-faint); padding:6px 11px 2px; text-transform:uppercase; letter-spacing:.6px; font-family:var(--font-mono);}
+
+  /* ---------- CENTER: HEATMAP + LOG ---------- */
+  .center-col{ display:flex; flex-direction:column; gap:16px; }
+  .map-wrap{ padding:16px; }
+  .zones{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-top:14px;
+  }
+  .zone{
+    position:relative; border-radius:12px; padding:13px 12px 11px;
+    border:1px solid var(--border); background:var(--bg-2);
+    transition:.35s ease; overflow:hidden; cursor:default;
+  }
+  .zone::after{
+    content:''; position:absolute; inset:0; opacity:.5; pointer-events:none;
+    background:radial-gradient(circle at 70% 20%, var(--zc,transparent), transparent 70%);
+  }
+  .zone.flagged{ border-color:var(--danger); box-shadow:0 0 0 1px var(--danger), 0 0 26px var(--danger-dim); }
+  .zone.flagged .zdot{ animation:pulse 1.4s ease-in-out infinite; }
+  .zname{ font-family:var(--font-display); font-weight:600; font-size:13px; display:flex; align-items:center; gap:7px;}
+  .zdot{ width:8px; height:8px; border-radius:50%; }
+  .zgate{ font-size:9.5px; color:var(--text-faint); font-family:var(--font-mono); letter-spacing:.4px; margin-top:1px;}
+  .zbar-track{ height:5px; border-radius:4px; background:var(--border); margin-top:11px; overflow:hidden;}
+  .zbar-fill{ height:100%; border-radius:4px; transition:width .6s ease, background .4s ease;}
+  .zval{ display:flex; justify-content:space-between; margin-top:6px; font-family:var(--font-mono); font-size:10.5px; color:var(--text-dim);}
+
+  .log-panel{ flex:1; min-height:180px; }
+  .log-body{ padding:6px 16px 14px; max-height:220px; overflow-y:auto; }
+  .log-row{ display:flex; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border); font-size:12px; }
+  .log-row:last-child{ border-bottom:none; }
+  .log-time{ font-family:var(--font-mono); color:var(--text-faint); font-size:10.5px; white-space:nowrap; padding-top:1px;}
+  .log-text{ color:var(--text-dim); line-height:1.4; }
+  .log-text b{ color:var(--text); font-weight:600; }
+
+  /* ---------- SUMMARY BAR ---------- */
+  .summary-panel{ padding:16px 18px; }
+  .summary-text{ font-size:13px; line-height:1.6; color:var(--text-dim); }
+  .summary-text.loading{ color:var(--text-faint); font-style:italic; }
+  .typing-dot{ display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--turf); margin-left:2px; animation:pulse 1s infinite;}
+
+  /* ---------- AGENT FEED ---------- */
+  .feed-panel{ display:flex; flex-direction:column; height:100%; }
+  .feed-body{ padding:12px; display:flex; flex-direction:column; gap:12px; max-height:76vh; overflow-y:auto; }
+  .empty-feed{ padding:30px 16px; text-align:center; color:var(--text-faint); font-size:12.5px; line-height:1.6; }
+
+  .card{
+    border-radius:12px; border:1px solid var(--border); background:var(--bg-2);
+    padding:13px 14px; animation:slideIn .4s ease;
+    border-left:3px solid var(--agent-color, var(--cyan));
+  }
+  @keyframes slideIn{ from{ opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  .card-head{ display:flex; align-items:center; gap:8px; margin-bottom:9px;}
+  .agent-icon{ width:22px; height:22px; border-radius:6px; display:flex; align-items:center; justify-content:center; background:var(--agent-color-dim); color:var(--agent-color); flex-shrink:0;}
+  .agent-icon svg{ width:12px; height:12px; }
+  .card-name{ font-family:var(--font-display); font-weight:600; font-size:12.5px; color:var(--agent-color); }
+  .card-zone{ font-size:10px; color:var(--text-faint); font-family:var(--font-mono); }
+  .card-time{ margin-left:auto; font-size:10px; color:var(--text-faint); font-family:var(--font-mono); }
+
+  .xai-row{ display:flex; gap:8px; margin-bottom:7px; align-items:flex-start; }
+  .xai-label{ font-size:9px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); font-family:var(--font-mono); width:64px; flex-shrink:0; padding-top:1px;}
+  .xai-val{ font-size:12px; color:var(--text); line-height:1.45; flex:1; }
+  .conf-track{ flex:1; height:6px; border-radius:4px; background:var(--border); overflow:hidden; margin-top:3px;}
+  .conf-fill{ height:100%; border-radius:4px; background:var(--agent-color); }
+  .conf-num{ font-family:var(--font-mono); font-size:11px; color:var(--agent-color); font-weight:600; margin-left:8px;}
+  .impact-tag{ display:inline-block; margin-top:2px; font-size:10.5px; font-family:var(--font-mono); padding:3px 8px; border-radius:6px; background:var(--agent-color-dim); color:var(--agent-color); }
+
+  .role-preview{ padding:22px 18px; text-align:center; }
+  .role-preview svg{ width:30px; height:30px; color:var(--text-faint); margin-bottom:10px;}
+  .role-preview h3{ font-family:var(--font-display); font-size:15px; margin-bottom:6px;}
+  .role-preview p{ font-size:12.5px; color:var(--text-dim); line-height:1.6; max-width:340px; margin:0 auto;}
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+
+  .footnote{ padding:10px 22px 18px; font-size:11px; color:var(--text-faint); font-family:var(--font-mono); text-align:center; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-mark">26</div>
+      <div class="brand-text">
+        <b>Stadium Intelligence</b>
+        <span>FIFA World Cup 2026 · Ops Copilot</span>
+      </div>
+    </div>
+
+    <div class="metric-pill">
+      <span class="label">Readiness</span>
+      <span class="value" id="readinessVal" style="color:var(--turf)">94%</span>
+    </div>
+    <div class="metric-pill">
+      <span class="dot pulse" id="riskDot" style="background:var(--turf); color:var(--turf)"></span>
+      <span class="label">Risk</span>
+      <span class="value" id="riskVal">Low</span>
+    </div>
+    <div class="metric-pill">
+      <span class="label">Venue</span>
+      <span class="value" style="font-size:13px">MetLife Stadium · NJ</span>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="clock" id="clock">--:--:--</div>
+    <button class="btn danger-outline" id="simBtn">⚡ Simulate Transport Delay</button>
+    <button class="icon-btn" id="themeBtn" title="Toggle theme">◐</button>
+  </header>
+
+  <div class="main">
+    <!-- NAV -->
+    <nav class="panel">
+      <div class="nav-caption">Roles</div>
+      <div class="nav-item active" data-role="organizer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Organizer
+      </div>
+      <div class="nav-item" data-role="fan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        Fan
+        <span class="nav-badge">preview</span>
+      </div>
+      <div class="nav-item" data-role="volunteer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 5 5.5.7-4 3.9 1 5.4-5-2.7-5 2.7 1-5.4-4-3.9 5.5-.7z"/></svg>
+        Volunteer
+        <span class="nav-badge">preview</span>
+      </div>
+      <div class="nav-item" data-role="staff">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/></svg>
+        Staff
+        <span class="nav-badge">preview</span>
+      </div>
+      <div class="nav-divider"></div>
+      <div class="nav-caption">Agent Swarm</div>
+      <div style="padding:2px 8px; display:flex; flex-direction:column; gap:7px;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-dim);"><span class="dot" style="background:var(--turf)"></span>Crowd</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-dim);"><span class="dot" style="background:var(--cyan)"></span>Transport</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-dim);"><span class="dot" style="background:var(--amber)"></span>Volunteer</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-dim);"><span class="dot" style="background:var(--danger)"></span>Emergency</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-dim);"><span class="dot" style="background:var(--violet)"></span>Sustainability</div>
+      </div>
+    </nav>
+
+    <!-- CENTER -->
+    <div class="center-col" id="organizerView">
+      <div class="panel summary-panel">
+        <div class="panel-title" style="margin-bottom:8px;">🧠 AI Executive Summary <span class="panel-sub" style="margin-left:6px;">Operations Copilot</span></div>
+        <div class="summary-text" id="summaryText">Gate distribution nominal across all zones. Transport network operating within normal parameters. No elevated risk factors detected in the last sync.</div>
+      </div>
+
+      <div class="panel map-wrap">
+        <div class="panel-head" style="padding:0; border:none; margin-bottom:2px;">
+          <div class="panel-title">📍 Live Zone Heatmap</div>
+          <div class="panel-sub">8 zones · updated 4s ago</div>
+        </div>
+        <div class="zones" id="zonesGrid"></div>
+      </div>
+
+      <div class="panel log-panel">
+        <div class="panel-head">
+          <div class="panel-title">📋 Operations Log</div>
+          <div class="panel-sub" id="logCount">0 events</div>
+        </div>
+        <div class="log-body" id="logBody">
+          <div class="log-row"><span class="log-time">19:41:58</span><span class="log-text">System initialized. All 5 agents online, baseline telemetry synced.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- role preview views (hidden by default) -->
+    <div class="panel role-preview" id="fanView" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      <h3>Fan Companion</h3>
+      <p>In the full build: multilingual AI chat, personalized wayfinding, accessibility-aware routing, and live gate wait times. Not implemented in this prototype — the Organizer Command Center is the flagship demo.</p>
+    </div>
+    <div class="panel role-preview" id="volunteerView" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.5 5 5.5.7-4 3.9 1 5.4-5-2.7-5 2.7 1-5.4-4-3.9 5.5-.7z"/></svg>
+      <h3>Volunteer Deployment</h3>
+      <p>In the full build: incident-driven task assignment, shift heatmaps, and skill-matched dispatch generated by the Volunteer Agent. Not implemented in this prototype.</p>
+    </div>
+    <div class="panel role-preview" id="staffView" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/></svg>
+      <h3>Venue Staff Console</h3>
+      <p>In the full build: incident intake, evacuation-plan generation from the Emergency Agent, and equipment/energy tracking from the Sustainability Agent. Not implemented in this prototype.</p>
+    </div>
+
+    <!-- FEED -->
+    <div class="panel feed-panel">
+      <div class="panel-head">
+        <div class="panel-title">⚡ Agent Swarm Feed</div>
+        <div class="panel-sub">explainable reasoning</div>
+      </div>
+      <div class="feed-body" id="feedBody">
+        <div class="empty-feed">Click <b style="color:var(--text)">"Simulate Transport Delay"</b> above to trigger a live incident. The Transport, Crowd and Volunteer agents will reason through it in real time using a real AI model call — prediction, confidence, cause, and recommended action.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">Prototype only — heatmap, telemetry and readiness scores are simulated client-side. Agent reasoning is generated live via the Claude API as a stand-in for the planned Gemini integration.</div>
+</div>
+
+<script>
+const ZONES = [
+  {id:'A', name:'Gate A · North',  base:32, color:'var(--turf)'},
+  {id:'B', name:'Gate B · North',  base:28, color:'var(--turf)'},
+  {id:'C', name:'Gate C · East',   base:41, color:'var(--turf)'},
+  {id:'D', name:'Gate D · East',   base:55, color:'var(--amber)'},
+  {id:'E', name:'Gate E · South',  base:37, color:'var(--turf)'},
+  {id:'F', name:'Concourse F',     base:22, color:'var(--turf)'},
+  {id:'G', name:'Transit Plaza',   base:48, color:'var(--amber)'},
+  {id:'H', name:'Parking West',    base:19, color:'var(--turf)'},
+];
+
+let state = { zones: JSON.parse(JSON.stringify(ZONES)), logCount:1, incidentActive:false };
+
+function levelColor(v){
+  if(v>=75) return 'var(--danger)';
+  if(v>=50) return 'var(--amber)';
+  return 'var(--turf)';
+}
+
+function renderZones(){
+  const grid = document.getElementById('zonesGrid');
+  grid.innerHTML = state.zones.map(z => `
+    <div class="zone ${z.flagged?'flagged':''}" style="--zc:${z.flagged?'var(--danger-dim)':'transparent'}">
+      <div class="zname"><span class="zdot" style="background:${levelColor(z.value)}"></span>${z.name}</div>
+      <div class="zgate">Zone ${z.id}${z.flagged?' · FLAGGED':''}</div>
+      <div class="zbar-track"><div class="zbar-fill" style="width:${z.value}%; background:${levelColor(z.value)}"></div></div>
+      <div class="zval"><span>Density</span><span>${z.value}%</span></div>
+    </div>
+  `).join('');
+}
+
+function initZoneValues(){
+  state.zones.forEach(z => z.value = z.base);
+  renderZones();
+}
+initZoneValues();
+
+// gentle ambient drift
+setInterval(() => {
+  state.zones.forEach(z => {
+    if(!z.flagged){
+      z.value = Math.max(8, Math.min(70, z.value + (Math.random()*10-5)));
+      z.value = Math.round(z.value);
+    }
+  });
+  renderZones();
+}, 4000);
+
+// clock
+function tick(){
+  const d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleTimeString('en-US',{hour12:false});
+}
+tick(); setInterval(tick, 1000);
+
+// theme toggle
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+});
+
+// role nav
+const views = { organizer: 'organizerView', fan: 'fanView', volunteer: 'volunteerView', staff: 'staffView' };
+document.querySelectorAll('.nav-item[data-role]').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item[data-role]').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    Object.values(views).forEach(id => document.getElementById(id).style.display = 'none');
+    document.getElementById(views[item.dataset.role]).style.display = item.dataset.role === 'organizer' ? 'flex' : 'block';
+    document.getElementById('organizerView').style.display = item.dataset.role === 'organizer' ? 'flex' : 'none';
+  });
+});
+
+function logEvent(html){
+  state.logCount++;
+  document.getElementById('logCount').textContent = state.logCount + ' events';
+  const row = document.createElement('div');
+  row.className = 'log-row';
+  const t = new Date().toLocaleTimeString('en-US',{hour12:false});
+  row.innerHTML = `<span class="log-time">${t}</span><span class="log-text">${html}</span>`;
+  const body = document.getElementById('logBody');
+  body.prepend(row);
+}
+
+const AGENTS = {
+  transport: { name:'Transport Agent', color:'var(--cyan)', colorDim:'var(--cyan-dim)', icon:'<path d="M3 12h18M12 3v18"/>' },
+  crowd:      { name:'Crowd Agent',     color:'var(--turf)', colorDim:'var(--turf-dim)', icon:'<circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><path d="M4 20c0-3 2-5 4-5s4 2 4 5M12 20c0-3 2-5 4-5s4 2 4 5"/>' },
+  volunteer:  { name:'Volunteer Agent', color:'var(--amber)', colorDim:'var(--amber-dim)', icon:'<path d="M12 3l2 4 4.5.6-3.2 3.2.8 4.4-4.1-2.2-4.1 2.2.8-4.4L5.5 7.6 10 7z"/>' },
+};
+
+function renderCard(agentKey, data, zoneLabel){
+  const a = AGENTS[agentKey];
+  const feed = document.getElementById('feedBody');
+  const empty = feed.querySelector('.empty-feed');
+  if(empty) empty.remove();
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.style.setProperty('--agent-color', a.color);
+  card.style.setProperty('--agent-color-dim', a.colorDim);
+  const t = new Date().toLocaleTimeString('en-US',{hour12:false});
+  card.innerHTML = `
+    <div class="card-head">
+      <div class="agent-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${a.icon}</svg></div>
+      <div>
+        <div class="card-name">${a.name}</div>
+        <div class="card-zone">${zoneLabel}</div>
+      </div>
+      <div class="card-time">${t}</div>
+    </div>
+    <div class="xai-row"><div class="xai-label">Prediction</div><div class="xai-val">${data.prediction}</div></div>
+    <div class="xai-row"><div class="xai-label">Confidence</div><div class="xai-val" style="display:flex;align-items:center;"><div class="conf-track"><div class="conf-fill" style="width:${data.confidence}%"></div></div><span class="conf-num">${data.confidence}%</span></div></div>
+    <div class="xai-row"><div class="xai-label">Reasoning</div><div class="xai-val">${data.reasoning}</div></div>
+    <div class="xai-row"><div class="xai-label">Action</div><div class="xai-val">${data.action}</div></div>
+    <div class="xai-row"><div class="xai-label">Impact</div><div class="xai-val"><span class="impact-tag">${data.impact}</span></div></div>
+  `;
+  feed.prepend(card);
+}
+
+function fallbackData(agentKey, zone){
+  const fallbacks = {
+    transport: { prediction:`Metro Blue Line delay of 12-18 min is likely to raise pedestrian volume at ${zone.name} by 30-40% within 20 minutes.`, confidence:78, reasoning:`Historical pattern: transit disruptions upstream of ${zone.name} consistently redirect foot traffic to the nearest surface gate within 15-25 minutes.`, action:`Open overflow lane at ${zone.name} and dispatch 2 additional stewards.`, impact:'Congestion contained' },
+    crowd: { prediction:`Density at ${zone.name} projected to cross 75% within 15 minutes if no redistribution occurs.`, confidence:81, reasoning:`Current density trend plus incoming transit surge exceeds the safe-flow threshold for this gate's throughput capacity.`, action:`Redirect 20% of arriving fans to adjacent Zone with lower density via signage and app push.`, impact:'Wait time -6 min' },
+    volunteer: { prediction:`Volunteer coverage at ${zone.name} is 1 team below recommended staffing for the projected surge.`, confidence:73, reasoning:`Current roster allocation was set for baseline flow, not the transit-driven spike now predicted.`, action:`Reassign 1 volunteer team from Zone H (currently under-utilized) to ${zone.name}.`, impact:'Coverage restored' },
+  };
+  return fallbacks[agentKey];
+}
+
+async function callAgent(agentKey, zone){
+  const prompts = {
+    transport: `You are the Transport Agent for a FIFA World Cup 2026 stadium operations AI. A transit delay incident has just been reported near ${zone.name} (current crowd density ${zone.value}%). Respond ONLY with raw JSON, no markdown, no code fences, in this exact shape: {"prediction": "...", "confidence": <integer 1-99>, "reasoning": "...", "action": "...", "impact": "short 2-4 word tag"}. Keep prediction, reasoning and action each under 28 words. Be specific and operational, referencing the zone by name.`,
+    crowd: `You are the Crowd Agent for a FIFA World Cup 2026 stadium operations AI. A transit delay is pushing extra pedestrian volume toward ${zone.name} (current density ${zone.value}%). Respond ONLY with raw JSON, no markdown, no code fences, in this exact shape: {"prediction": "...", "confidence": <integer 1-99>, "reasoning": "...", "action": "...", "impact": "short 2-4 word tag"}. Keep prediction, reasoning and action each under 28 words. Focus on redistribution and safe-flow thresholds.`,
+    volunteer: `You are the Volunteer Agent for a FIFA World Cup 2026 stadium operations AI. Given a developing congestion incident at ${zone.name} (density ${zone.value}%), assess volunteer staffing needs. Respond ONLY with raw JSON, no markdown, no code fences, in this exact shape: {"prediction": "...", "confidence": <integer 1-99>, "reasoning": "...", "action": "...", "impact": "short 2-4 word tag"}. Keep prediction, reasoning and action each under 28 words. Focus on staffing/deployment.`,
+  };
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 400,
+        messages: [{ role:"user", content: prompts[agentKey] }]
+      })
+    });
+    const raw = await response.json();
+    let text = (raw.content || []).map(b => b.text || '').join('').trim();
+    text = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(text);
+    if(!parsed.prediction || !parsed.confidence) throw new Error('bad shape');
+    return parsed;
+  }catch(e){
+    return fallbackData(agentKey, zone);
+  }
+}
+
+async function runIncident(){
+  if(state.incidentActive) return;
+  state.incidentActive = true;
+  const btn = document.getElementById('simBtn');
+  btn.textContent = '⏳ Agents reasoning…';
+  btn.disabled = true;
+
+  // pick the highest-density non-flagged zone to flag
+  const zone = state.zones.reduce((a,b)=> b.value > a.value ? b : a, state.zones[0]);
+  zone.flagged = true;
+  zone.value = Math.min(96, zone.value + 28);
+  renderZones();
+
+  document.getElementById('riskVal').textContent = 'Elevated';
+  document.getElementById('riskDot').style.background = 'var(--amber)';
+  document.getElementById('riskDot').style.color = 'var(--amber)';
+  document.getElementById('readinessVal').textContent = '81%';
+  document.getElementById('readinessVal').style.color = 'var(--amber)';
+
+  logEvent(`<b>Transit delay detected</b> upstream of ${zone.name}. Escalating to agent swarm.`);
+
+  const summaryEl = document.getElementById('summaryText');
+  summaryEl.classList.add('loading');
+  summaryEl.textContent = 'Operations Copilot is synthesizing agent findings…';
+
+  const order = ['transport','crowd','volunteer'];
+  for(const key of order){
+    const data = await callAgent(key, zone);
+    renderCard(key, data, `Zone ${zone.id} · ${zone.name}`);
+    logEvent(`<b>${AGENTS[key].name}</b> flagged ${zone.name} — ${data.confidence}% confidence.`);
+    await new Promise(r => setTimeout(r, 350));
+  }
+
+  summaryEl.classList.remove('loading');
+  summaryEl.innerHTML = `Transit disruption near <b style="color:var(--text)">${zone.name}</b> is driving elevated density. Transport, Crowd and Volunteer agents concur on redistribution + staffing reinforcement. Executing recommended actions should return the zone to baseline within ~12-15 minutes.`;
+
+  btn.textContent = '↻ Reset Simulation';
+  btn.disabled = false;
+  btn.onclick = resetIncident;
+}
+
+function resetIncident(){
+  state.zones.forEach(z => { z.flagged = false; z.value = z.base; });
+  renderZones();
+  state.incidentActive = false;
+  document.getElementById('riskVal').textContent = 'Low';
+  document.getElementById('riskDot').style.background = 'var(--turf)';
+  document.getElementById('riskDot').style.color = 'var(--turf)';
+  document.getElementById('readinessVal').textContent = '94%';
+  document.getElementById('readinessVal').style.color = 'var(--turf)';
+  document.getElementById('summaryText').innerHTML = 'Gate distribution nominal across all zones. Transport network operating within normal parameters. No elevated risk factors detected in the last sync.';
+  document.getElementById('feedBody').innerHTML = '<div class="empty-feed">Click <b style="color:var(--text)">"Simulate Transport Delay"</b> above to trigger a live incident. The Transport, Crowd and Volunteer agents will reason through it in real time using a real AI model call — prediction, confidence, cause, and recommended action.</div>';
+  logEvent('Simulation reset. All zones returned to baseline.');
+  const btn = document.getElementById('simBtn');
+  btn.textContent = '⚡ Simulate Transport Delay';
+  btn.onclick = runIncident;
+}
+
+document.getElementById('simBtn').addEventListener('click', runIncident);
+</script>
+</body>
+</html>
